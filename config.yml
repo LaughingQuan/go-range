@@ -1,0 +1,19 @@
+mong:
+  host: 172.16.1.3
+  port: 27017
+  database: testdb1
+  collection: usr
+  username : testuser
+  password : 123a123B
+ldap:
+  url: 172.16.1.2
+  port: 389
+  username: cn=admin,dc=cpu-os,dc=com
+  password: 123a123B
+  basedn: dc=cpu-os,dc=com
+mysql:
+  host: 172.16.1.3
+  port: 3306
+  username: root
+  password: 123a123B
+  database: goat_db

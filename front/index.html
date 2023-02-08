@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <!-- 必须的 meta 标签 -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>靶机</title>
+    <link href="/static/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/vue@2.6.14.js"></script>
+</head>
+
+<body>
+    <div id="app" class="container pt-3">
+        <!--  标题  -->
+        <h1 class="mb-3" style="border-bottom: 1px solid #eee;"> ${info.name}</h1>
+        <div class="alert alert-primary" role="alert">
+            <h4 class="alert-heading">止黑守白</h4>
+            Examples of common network vulnerabilities in the Golang programming language
+        </div>
+
+        <div class="card mb-4" v-for="item in data">
+            <div class="card-body">
+                <form :action="item.url +'/'+ item.safe + '/'" target="_blank" :method="item.method"
+                    :enctype="item.enctype">
+                    <label class="form-label">
+                        <span
+                            :class="['badge',item.method === 'get' ? 'bg-warning' : 'bg-success']">${item.method}</span>
+                        ${item.name}
+                    </label>
+                    <input :type="item.type" class="form-control mb-3" v-model="item.query.value"
+                        :name="item.query.key">
+                    <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                        <button type="button" @click="item.safe = 'unsafe'"
+                            :class="['btn', item.safe === 'unsafe' ? 'btn-danger' : 'btn-outline-danger']">unsafe</button>
+                        <button type="button" @click="item.safe = 'safe'"
+                            :class="['btn', item.safe === 'safe' ? 'btn-success' : 'btn-outline-success']">safe</button>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="/static/json.js"></script>
+<script>
+    new Vue({
+        delimiters: ['${', '}'],
+        data: {
+            info: config.info,
+            data: config.item.map(item => ({
+                item: item,
+                safe: 'unsafe',
+                method: item.request.method.toLowerCase(),
+                name: item.name,
+                url: 1,
+                query: {
+                    key: "",
+                    value: "",
+                },
+                type: "text",
+                enctype: ""
+            }))
+        },
+
+        mounted() {
+            this.Init()
+        },
+        methods: {
+            Init() {
+                for (var i = 0; i < this.data.length; i++) {
+                    if (this.data[i].method == "get") {
+                        this.data[i].query = this.data[i].item.request.url.query[0]
+                        url = this.data[i].item.request.url.raw.replace(/\{\{baseUrl}}/g, "")
+                        url = url.split("?")[0]
+                        url = url.substr(0, url.length - 1)
+                        index = url.lastIndexOf("/")
+                        url = url.substr(0, index)
+                        this.data[i].url = url
+                    } else {
+                        if (this.data[i].item.request.body.mode == "urlencoded") {
+                            this.data[i].query = this.data[i].item.request.body.urlencoded[0]
+                        } else if (this.data[i].item.request.body.mode == "formdata") {
+                            this.data[i].type = this.data[i].item.request.body.formdata[0].type
+                            this.data[i].query.key = this.data[i].item.request.body.formdata[0].key
+                            this.data[i].query.value = this.data[i].item.request.body.formdata[0].value
+                            this.data[i].enctype = "multipart/form-data"
+                        }
+                        url = this.data[i].item.request.url.replace(/\{\{baseUrl}}/g, "")
+                        url = url.substr(0, url.length - 1)
+                        index = url.lastIndexOf("/")
+                        url = url.substr(0, index)
+                        this.data[i].url = url
+                    }
+                }
+            }
+        }
+    }).$mount('#app')
+</script>
+
+</html>

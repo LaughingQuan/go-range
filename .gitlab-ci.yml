@@ -1,0 +1,95 @@
+before_script:
+  - export 
+  - VERSION=$(git describe --tags --abbrev=0)
+  - BIN=./bin
+  - VERSIONAll=$(git describe --tags --abbrev=1)
+  - VERSIONAllTEMP=${VERSIONAll//./0}
+  - PACKAGENAME=IASTGOGOAT${VERSIONAllTEMP//v/}
+  - UPLODAPATH=/home/gitlab-runner/iast
+  - FILESERVER=http://192.168.10.91:8080/iast/
+
+stages:
+  - test
+  - build
+  - deploy
+  - uploading
+  - validation
+
+test_go_build:
+  stage: test
+  retry: 2
+  tags:
+    - test-tag
+  script:
+    - echo 'testing'
+    - go build -o ./bin/app ./cmd/gin/ 
+
+test_Xmirror-build:
+  stage: test
+  retry: 2
+  tags:
+    - test-tag
+  script:
+    - echo 'testing'
+    - rm -rf xmirror-go
+    - cp $XMIRROR_HOME/xmirror-go ./
+    - ./xmirror-go build -o ./bin/app ./cmd/gin/ 
+
+build:
+  stage: build
+  retry: 2
+  tags:
+    - test-tag
+  script:
+    - echo 'build'
+    - rm -rf xmirror-go
+    - cp $XMIRROR_HOME/xmirror-go ./
+    - docker-compose build
+
+deploy:
+  stage: deploy
+  retry: 2
+  script:
+    - echo 'deploy'
+    - docker stop GoGoatApp GoGoatOpenLdap GoGoatMysql || true
+    - docker rm GoGoatApp GoGoatOpenLdap GoGoatMysql || true
+    - docker network rm goat-network || true
+    - docker-compose up -d
+  tags:
+    - test-tag
+  only:
+    - master
+    - tags
+    - web
+
+uploading:
+  stage: uploading 
+  retry: 2
+  script:
+    - echo 'uploading'
+    - mkdir bin
+    - git archive -o $BIN/$PACKAGENAME.tar.gz HEAD
+    - cp $BIN/$PACKAGENAME.tar.gz $UPLODAPATH/$PACKAGENAME.tar.gz
+    - echo "file link => ${FILESERVER}${PACKAGENAME}.tar.gz"
+  artifacts:
+    paths:
+      - bin/
+    expire_in: 7d 
+  tags:
+    - test-tag
+  only:
+    - master
+    - tags
+    - web
+
+validation:
+  stage: validation
+  retry: 2
+  script: 
+    - go run . -ip=192.168.10.91 -p=8888
+  tags:
+    - test-tag
+  only:
+    - master
+    - tags
+    - web

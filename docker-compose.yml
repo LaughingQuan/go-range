@@ -1,0 +1,67 @@
+version: '3.7'
+networks:
+  goat-net:
+    name: goat-network
+    ipam:
+      config:
+      - subnet: 172.16.1.0/24
+services:
+  app:
+    container_name: GoGoatApp
+    restart: always
+    build: .
+    ports:
+      - '8888:8888'
+    depends_on:
+      - openldap
+      - mysql
+    networks:
+      goat-net:
+        ipv4_address: 172.16.1.4
+  openldap:
+    container_name: GoGoatOpenLdap
+    image: osixia/openldap:latest
+    restart: always
+    environment:
+      BLOCK_AUTO_CREAteD_USERS: "true"
+      LDAP_LOG_LEVEL: "256"
+      LDAP_ORGANISATION: "admin"
+      LDAP_DOMAIN: "cpu-os.com"
+      LDAP_ADMIN_PASSWORD: "123a123B"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_READONLY_USER: "false"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "true"
+      LDAP_TLS_CRT_FILENAME: "ldap.crt"
+      LDAP_TLS_KEY_FILENAME: "ldap.key"
+      LDAP_TLS_CA_CRT_FILENAME: "ca.crt"
+      LDAP_TLS_ENFORCE: "false"
+      LDAP_TLS_CIPHER_SUITE: "SECURE256:-VERS-SSL3.0"
+      LDAP_TLS_PROTOCOL_MIN: "3.1"
+      LDAP_TLS_VERIFY_CLIENT: "demand"
+      LDAP_REPLICATION: "false"
+      KEEP_EXISTING_CONFIG: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_SSL_HELPER_PREFIX: "ldap"
+    networks:
+      goat-net:
+        ipv4_address: 172.16.1.2
+    ports:
+      - 389:389
+  mysql:
+    image: mysql:5.6
+    container_name: GoGoatMysql
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+    restart: always
+    environment:
+        MYSQL_ROOT_PASSWORD: 123a123B
+        MYSQL_PORT: 3306
+    networks:
+      goat-net:
+        ipv4_address: 172.16.1.5
+    ports:
+      - 3306:3306
+    volumes:
+      - ./dbenv/cnf/:/etc/mysql
+      - ./dbenv/data/db.sql:/docker-entrypoint-initdb.d/grant.sql
